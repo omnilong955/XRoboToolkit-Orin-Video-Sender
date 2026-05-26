@@ -748,6 +748,7 @@ void streamingThreadFunction() {
     // Initialize ZED camera
     sl::Camera zed;
     sl::InitParameters init_params;
+    init_params.depth_mode = sl::DEPTH_MODE::NONE;
 
     // Get camera configuration safely
     CameraRequestData config;
