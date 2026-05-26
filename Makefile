@@ -21,12 +21,16 @@ APP := OrinVideoSender
 ###############################################################################
 # ZED
 
-# TCP w/o asio -- pass
+# WBCD ZED 2i + dual D405 composite sender
 SRCS := \
- 	main_zed_tcp.cpp
+ 	main_wbcd_zed_d405.cpp
+
+# TCP w/o asio -- pass
+# SRCS := \
+# 	main_zed_tcp.cpp
 
 #SRCS := \
-	main_zed_tcp_zmq.cpp
+# 	main_zed_tcp_zmq.cpp
 
 # # TCP with asio -- pass
 # SRCS := \
@@ -50,7 +54,8 @@ CPPFLAGS := -std=c++11 \
 	-I/usr/include/opencv4 \
 	-I/usr/local/cuda/include \
 	$(shell pkg-config --cflags gstreamer-1.0 gstreamer-app-1.0 glib-2.0 2>/dev/null || echo "") \
-	$(shell pkg-config --cflags libzmq 2>/dev/null || echo "")
+	$(shell pkg-config --cflags libzmq 2>/dev/null || echo "") \
+	$(shell pkg-config --cflags realsense2 2>/dev/null || echo "")
 
 # Compiler flags
 CXXFLAGS := -Wall -Wextra -O2 -g
@@ -79,6 +84,12 @@ LDFLAGS += $(shell pkg-config --libs gstreamer-1.0 gstreamer-app-1.0 glib-2.0 2>
 
 # ZMQ library
 LDFLAGS += $(shell pkg-config --libs libzmq 2>/dev/null || echo "-lzmq")
+
+# RealSense library for D405 hand cameras when librealsense2 is installed
+REALSENSE_LIBS := $(shell pkg-config --libs realsense2 2>/dev/null)
+ifneq ($(strip $(REALSENSE_LIBS)),)
+LDFLAGS += $(REALSENSE_LIBS)
+endif
 
 all: $(APP)
 
