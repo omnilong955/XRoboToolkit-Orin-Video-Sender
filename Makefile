@@ -25,6 +25,10 @@ APP := OrinVideoSender
 SRCS := \
  	main_wbcd_zed_d405.cpp
 
+APP_720 := OrinVideoSender720
+SRCS_720 := \
+	main_wbcd_zed_d405_720.cpp
+
 # TCP w/o asio -- pass
 # SRCS := \
 # 	main_zed_tcp.cpp
@@ -46,6 +50,7 @@ SRCS := \
 ###############################################################################
 
 OBJS := $(SRCS:.cpp=.o)
+OBJS_720 := $(SRCS_720:.cpp=.o)
 
 # Include paths
 CPPFLAGS := -std=c++11 \
@@ -93,6 +98,8 @@ endif
 
 all: $(APP)
 
+wbcd720: $(APP_720)
+
 debug: CXXFLAGS += -DDEBUG -g3 -O0
 debug: $(APP)
 
@@ -104,8 +111,12 @@ $(APP): $(OBJS)
 	@echo "Linking: $@"
 	$(CXX) -o $@ $(OBJS) $(LDFLAGS)
 
+$(APP_720): $(OBJS_720)
+	@echo "Linking: $@"
+	$(CXX) -o $@ $(OBJS_720) $(LDFLAGS)
+
 clean:
-	rm -rf $(APP) $(OBJS)
+	rm -rf $(APP) $(APP_720) $(OBJS) $(OBJS_720)
 
 install: $(APP)
 	@echo "Installing $(APP)..."

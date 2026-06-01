@@ -1,0 +1,22 @@
+Starting direct WBCD video streaming to 127.0.0.1:5000...
+Started WBCD streaming thread
+WBCD streaming thread started
+Attempting to connect to 127.0.0.1:5000
+Connected to server 127.0.0.1:5000
+[2026-05-28 23:04:12 UTC][ZED][INFO] Logging level INFO
+[D405 Left] D405 started serial=260322271510
+[D405 Right] D405 started serial=260322271351
+[2026-05-28 23:04:14 UTC][ZED][INFO] [Init]  Camera successfully opened.
+[2026-05-28 23:04:14 UTC][ZED][INFO] [Init]  Camera FW version: 1523
+[2026-05-28 23:04:14 UTC][ZED][INFO] [Init]  Video mode: HD720@30
+[2026-05-28 23:04:14 UTC][ZED][INFO] [Init]  Serial Number: S/N 33129872
+[2026-05-28 23:04:14 UTC][ZED][INFO] [Init]  Depth mode selected: NONE. Ensure this mode matches your application's performance and accuracy requirements. See https://www.stereolabs.com/docs/depth-sensing/depth-modes for help.
+[2026-05-28 23:04:14 UTC][ZED][INFO] [Init]  Health check functionality is limited when DEPTH_MODE::NONE is enabled, as it relies on the depth pipeline for image processing.
+WBCD pipeline: appsrc name=mysource is-live=true format=time caps=video/x-raw,format=BGRA,width=1280,height=720,framerate=30/1 ! videoconvert ! nvvidconv ! video/x-raw(memory:NVMM),format=NV12 ! tee name=t t. ! queue ! nvv4l2h264enc maxperf-enable=1 insert-sps-pps=true idrinterval=15 bitrate=8000000 ! h264parse config-interval=-1 ! video/x-h264,stream-format=byte-stream,alignment=au ! appsink name=mysink emit-signals=true sync=false 
+Opening in BLOCKING MODE 
+Starting WBCD composite loop...
+NvMMLiteOpen : Block : BlockType = 4 
+===== NvVideo: NVENC =====
+NvMMLiteBlockCreate : Block : BlockType = 4 
+H264: Profile = 66 Level = 0 
+NVMEDIA: Need to set EMC bandwidth : 376000 
