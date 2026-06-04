@@ -27,44 +27,16 @@
 
 namespace {
 
-// WBCD layout: one H.264 stream, top row ZED stereo, bottom row D405 hands.
-#ifndef WBCD_OUTPUT_WIDTH
-#define WBCD_OUTPUT_WIDTH 2560
-#endif
-#ifndef WBCD_OUTPUT_HEIGHT
-#define WBCD_OUTPUT_HEIGHT 1440
-#endif
-#ifndef WBCD_OUTPUT_FPS
-#define WBCD_OUTPUT_FPS 30
-#endif
-#ifndef WBCD_DEFAULT_BITRATE
-#define WBCD_DEFAULT_BITRATE 4000000
-#endif
-#ifndef WBCD_EYE_WIDTH
-#define WBCD_EYE_WIDTH 1280
-#endif
-#ifndef WBCD_EYE_HEIGHT
-#define WBCD_EYE_HEIGHT 720
-#endif
-#ifndef WBCD_D405_WIDTH
-#define WBCD_D405_WIDTH 640
-#endif
-#ifndef WBCD_D405_HEIGHT
-#define WBCD_D405_HEIGHT 480
-#endif
-#ifndef WBCD_D405_FPS
-#define WBCD_D405_FPS 30
-#endif
-
-constexpr int kOutputWidth = WBCD_OUTPUT_WIDTH;
-constexpr int kOutputHeight = WBCD_OUTPUT_HEIGHT;
-constexpr int kOutputFps = WBCD_OUTPUT_FPS;
-constexpr int kDefaultBitrate = WBCD_DEFAULT_BITRATE;
-constexpr int kEyeWidth = WBCD_EYE_WIDTH;
-constexpr int kEyeHeight = WBCD_EYE_HEIGHT;
-constexpr int kD405Width = WBCD_D405_WIDTH;
-constexpr int kD405Height = WBCD_D405_HEIGHT;
-constexpr int kD405Fps = WBCD_D405_FPS;
+// Tencent cloud layout: one 1280x720 H.264 stream, top row ZED stereo, bottom row D405 hands.
+constexpr int kOutputWidth = 1280;
+constexpr int kOutputHeight = 720;
+constexpr int kOutputFps = 30;
+constexpr int kDefaultBitrate = 8000000;
+constexpr int kEyeWidth = 640;
+constexpr int kEyeHeight = 360;
+constexpr int kD405Width = 640;
+constexpr int kD405Height = 480;
+constexpr int kD405Fps = 30;
 
 struct CameraRequestData {
   int width;
@@ -482,6 +454,9 @@ std::string buildPipelineString(int bitrate, bool use_hevc, bool preview) {
   // appsrc accepts BGRA composite frames, Jetson hardware encoder emits H.264.
   std::string encoder = use_hevc ? "nvv4l2h265enc" : "nvv4l2h264enc";
   std::string parser = use_hevc ? "h265parse" : "h264parse";
+  std::string encoded_caps = use_hevc
+                                 ? "video/x-h265,stream-format=byte-stream,alignment=au"
+                                 : "video/x-h264,stream-format=byte-stream,alignment=au";
 
   std::string pipeline =
       "appsrc name=mysource is-live=true format=time "
@@ -493,7 +468,7 @@ std::string buildPipelineString(int bitrate, bool use_hevc, bool preview) {
       "t. ! queue ! " +
       encoder +
       " maxperf-enable=1 insert-sps-pps=true idrinterval=15 bitrate=" +
-      std::to_string(std::max(bitrate, kDefaultBitrate)) + " ! " + parser +
+      std::to_string(std::max(bitrate, kDefaultBitrate)) + " ! " + parser + " config-interval=-1 ! " + encoded_caps +
       " ! appsink name=mysink emit-signals=true sync=false ";
 
   if (preview) {

@@ -417,7 +417,7 @@ void copyToCanvas(const cv::Mat &src_bgra, cv::Mat &canvas, int x, int y) {
 }
 
 GstFlowReturn on_new_sample(GstAppSink *sink, gpointer) {
-  // Appsink receives encoded H.264/HEVC NAL bytes; prefix length for Unity.
+  // Appsink receives raw I420 frames; prefix length for the local TRRO bridge.
   GstSample *sample = gst_app_sink_pull_sample(sink);
   if (!sample) {
     return GST_FLOW_ERROR;
@@ -451,7 +451,30 @@ GstFlowReturn on_new_sample(GstAppSink *sink, gpointer) {
 }
 
 std::string buildPipelineString(int bitrate, bool use_hevc, bool preview) {
-  // appsrc accepts BGRA composite frames, Jetson hardware encoder emits H.264.
+  (void)bitrate;
+  (void)use_hevc;
+  // appsrc accepts BGRA composite frames; TRRO SDK encodes raw I420 for Web.
+  std::string pipeline =
+      "appsrc name=mysource is-live=true format=time "
+      "caps=video/x-raw,format=BGRA,width=" +
+      std::to_string(kOutputWidth) + ",height=" + std::to_string(kOutputHeight) +
+      ",framerate=" + std::to_string(kOutputFps) + "/1 ! "
+      "tee name=t "
+      "t. ! queue ! videoconvert ! video/x-raw,format=I420,width=" +
+      std::to_string(kOutputWidth) + ",height=" + std::to_string(kOutputHeight) +
+      ",framerate=" + std::to_string(kOutputFps) + "/1 ! "
+      "appsink name=mysink emit-signals=true sync=false ";
+
+  if (preview) {
+    pipeline +=
+        "t. ! queue ! videoconvert ! autovideosink sync=false ";
+  }
+
+  return pipeline;
+}
+
+std::string buildEncodedPipelineString(int bitrate, bool use_hevc, bool preview) {
+  // Kept for reference; the Tencent Cloud path uses raw I420 to avoid Web green frames.
   std::string encoder = use_hevc ? "nvv4l2h265enc" : "nvv4l2h264enc";
   std::string parser = use_hevc ? "h265parse" : "h264parse";
   std::string encoded_caps = use_hevc
