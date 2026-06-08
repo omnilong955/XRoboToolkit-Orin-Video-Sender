@@ -1,5 +1,6 @@
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <condition_variable>
 #include <csignal>
 #include <cstring>
@@ -397,6 +398,37 @@ inline cv::Mat slMat2cvMat(sl::Mat &input) {
                  input.getPtr<sl::uchar1>(sl::MEM::CPU));
 }
 
+cv::Mat enhanceHandView(const cv::Mat &bgr) {
+  constexpr double kGamma = 0.75;
+  constexpr double kContrast = 1.25;
+  constexpr double kBrightness = 15.0;
+  constexpr double kSharpen = 0.4;
+
+  static const cv::Mat gamma_lut = []() {
+    cv::Mat lut(1, 256, CV_8UC1);
+    for (int i = 0; i < 256; ++i) {
+      double normalized = static_cast<double>(i) / 255.0;
+      lut.at<uchar>(i) =
+          cv::saturate_cast<uchar>(std::pow(normalized, kGamma) * 255.0);
+    }
+    return lut;
+  }();
+
+  cv::Mat gamma_corrected;
+  cv::LUT(bgr, gamma_lut, gamma_corrected);
+
+  cv::Mat adjusted;
+  gamma_corrected.convertTo(adjusted, -1, kContrast, kBrightness);
+
+  cv::Mat blurred;
+  cv::GaussianBlur(adjusted, blurred, cv::Size(0, 0), 1.0);
+
+  cv::Mat sharpened;
+  cv::addWeighted(adjusted, 1.0 + kSharpen, blurred, -kSharpen, 0.0,
+                  sharpened);
+  return sharpened;
+}
+
 cv::Mat fitToTile(const cv::Mat &src_bgr, const std::string &label) {
   // Center-crop each hand camera into a 16:9 tile for the lower row.
   cv::Mat tile(kEyeHeight, kEyeWidth, CV_8UC4, cv::Scalar(0, 0, 0, 255));
@@ -420,8 +452,9 @@ cv::Mat fitToTile(const cv::Mat &src_bgr, const std::string &label) {
   int crop_x = std::max(0, (resized_w - kEyeWidth) / 2);
   int crop_y = std::max(0, (resized_h - kEyeHeight) / 2);
   cv::Mat cropped = resized(cv::Rect(crop_x, crop_y, kEyeWidth, kEyeHeight));
+  cv::Mat enhanced = enhanceHandView(cropped);
 
-  cv::cvtColor(cropped, tile, cv::COLOR_BGR2BGRA);
+  cv::cvtColor(enhanced, tile, cv::COLOR_BGR2BGRA);
   cv::putText(tile, label, cv::Point(24, 48), cv::FONT_HERSHEY_SIMPLEX, 1.0,
               cv::Scalar(255, 255, 255, 255), 2, cv::LINE_AA);
   return tile;
